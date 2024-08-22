@@ -102,6 +102,25 @@
         #scroll-sidebar {
             display: none; /* Hide the scroll sidebar */
         }
+
+        /* Additional styles for input fields side by side */
+        .input-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px; /* Space between input fields */
+        }
+
+        .input-group .form-group {
+            flex: 1;
+        }
+
+        .form-group label {
+            margin-bottom: 5px; /* Spacing between label and input */
+        }
+
+        .form-group input {
+            width: 100%; /* Full width of the parent container */
+        }
     </style>
 </head>
 <body>
@@ -116,8 +135,16 @@
             <div class="card p-4" style="width: 20rem;">
                 <div class="card-body">
                     <h5 class="card-title">Enter Player Names</h5>
-                    <input type="text" id="player1-name" class="form-control mb-2" placeholder="Player 1 Name">
-                    <input type="text" id="player2-name" class="form-control mb-2" placeholder="Player 2 Name">
+                    <div class="input-group">
+                        <div class="form-group">
+                            <label for="player1-name">Player 1 Name:</label>
+                            <input type="text" id="player1-name" class="form-control mb-2" placeholder="Player 1 Name">
+                        </div>
+                        <div class="form-group">
+                            <label for="player2-name">Player 2 Name:</label>
+                            <input type="text" id="player2-name" class="form-control mb-2" placeholder="Player 2 Name">
+                        </div>
+                    </div>
                     <button class="btn btn-primary mt-3" id="start-game">Start Game</button>
                 </div>
             </div>
@@ -189,81 +216,85 @@
             const currentTurnDisplay = document.getElementById('current-turn');
 
             if (guess === randomNumber) {
-                result.textContent = `Success! ${currentPlayer === 1 ? player1Name : player2Name} guessed the number! Your score is ${score}.`;
-                result.className = 'alert alert-success fade-in';
-                submitBtn.disabled = true;
+                result.textContent = `Success! ${currentPlayer === 1 ? player1Name : player2Name} guessed the number!`;
+                result.style.color = 'green';
+                submitBtn.classList.add('d-none');
                 resetBtn.classList.remove('d-none');
-                playSound('correct');
-                showCongrats();
-                showBubbles();
-                clearInterval(timer);
+                document.getElementById('congrats-message').style.display = 'block';
+                playSound('correct-sound');
+                stopTimer();
+                createBubbles();
+            } else if (guess < randomNumber) {
+                result.textContent = 'Too low!';
+                result.style.color = 'red';
+                hintDisplay.textContent = 'Try a higher number.';
+                hintDisplay.style.color = 'red';
+                playSound('wrong-sound');
             } else {
-                if (guess < randomNumber) {
-                    result.textContent = 'Too Low! Try Again.';
-                    result.className = 'alert alert-danger fade-in';
-                } else {
-                    result.textContent = 'Too High! Try Again.';
-                    result.className = 'alert alert-warning fade-in';
-                }
-                playSound('wrong');
-                attempts++;
-                score = Math.max(score - 10, 0);
-                attemptsDisplay.textContent = `Attempts: ${attempts}`;
-                hintDisplay.textContent = guess < randomNumber ? 'Hint: Try a higher number.' : 'Hint: Try a lower number.';
-                currentPlayer = currentPlayer === 1 ? 2 : 1;
-                currentTurnDisplay.textContent = `${currentPlayer === 1 ? player1Name : player2Name}'s Turn`;
+                result.textContent = 'Too high!';
+                result.style.color = 'red';
+                hintDisplay.textContent = 'Try a lower number.';
+                hintDisplay.style.color = 'red';
+                playSound('wrong-sound');
             }
+
+            attempts++;
+            attemptsDisplay.textContent = `Attempts: ${attempts}`;
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            currentTurnDisplay.textContent = `${currentPlayer === 1 ? player1Name : player2Name}'s Turn`;
+            document.getElementById('user-input').value = '';
+        }
+
+        function startTimer() {
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time').textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    document.getElementById('result').textContent = 'Time is up!';
+                    document.getElementById('result').style.color = 'red';
+                    document.getElementById('submit').classList.add('d-none');
+                    document.getElementById('reset').classList.remove('d-none');
+                    playSound('timer-sound');
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timer);
         }
 
         function resetGame() {
             randomNumber = Math.floor(Math.random() * 100) + 1;
             attempts = 0;
             timeLeft = 60;
-            score = 100;
-            document.getElementById('user-input').value = '';
+            document.getElementById('time').textContent = timeLeft;
             document.getElementById('result').textContent = '';
-            document.getElementById('attempts').textContent = 'Attempts: 0';
+            document.getElementById('attempts').textContent = '';
             document.getElementById('hint').textContent = '';
-            document.getElementById('current-turn').textContent = `${player1Name}'s Turn`;
-            document.getElementById('submit').disabled = false;
+            document.getElementById('current-turn').textContent = '';
+            document.getElementById('user-input').value = '';
+            document.getElementById('start-game').disabled = false;
+            document.getElementById('congrats-message').style.display = 'none';
+            document.getElementById('bubbles').innerHTML = '';
+            document.getElementById('submit').classList.remove('d-none');
             document.getElementById('reset').classList.add('d-none');
-            startTimer();
+            stopTimer();
         }
 
-        function playSound(type) {
-            const sound = document.getElementById(type + '-sound');
-            if (sound) sound.play();
+        function playSound(id) {
+            document.getElementById(id).play();
         }
 
-        function showCongrats() {
-            const congrats = document.getElementById('congrats-message');
-            congrats.style.display = 'block';
-            setTimeout(() => congrats.style.display = 'none', 2000);
-        }
-
-        function showBubbles() {
-            const bubblesContainer = document.getElementById('bubbles');
+        function createBubbles() {
             for (let i = 0; i < 30; i++) {
                 const bubble = document.createElement('div');
                 bubble.className = 'bubble';
-                bubble.style.left = Math.random() * 100 + 'vw';
-                bubble.style.width = Math.random() * 30 + 20 + 'px';
+                bubble.style.left = `${Math.random() * 100}vw`;
+                bubble.style.width = `${Math.random() * 20 + 20}px`;
                 bubble.style.height = bubble.style.width;
-                bubblesContainer.appendChild(bubble);
+                document.getElementById('bubbles').appendChild(bubble);
             }
-        }
-
-        function startTimer() {
-            document.getElementById('time').textContent = timeLeft;
-            timer = setInterval(() => {
-                timeLeft--;
-                document.getElementById('time').textContent = timeLeft;
-                if (timeLeft <= 0) {
-                    clearInterval(timer);
-                    document.getElementById('submit').disabled = true;
-                    document.getElementById('reset').classList.remove('d-none');
-                }
-            }, 1000);
         }
     </script>
 </body>
